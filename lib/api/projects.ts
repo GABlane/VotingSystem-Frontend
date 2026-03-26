@@ -6,6 +6,7 @@ export interface Project {
   description: string;
   is_active: boolean;
   qr_code_url: string;
+  logo_url?: string;
   total_votes: number;
   created_at: string;
   updated_at: string;
@@ -29,14 +30,14 @@ export const projectsApi = {
   },
 
   // Admin endpoints
-  create: async (data: { title: string; description?: string }): Promise<Project> => {
+  create: async (data: { title: string; description?: string; logo_url?: string }): Promise<Project> => {
     const response = await apiClient.post('/projects', data);
     return response.data;
   },
 
   update: async (
     id: string,
-    data: Partial<Pick<Project, 'title' | 'description' | 'is_active'>>
+    data: Partial<Pick<Project, 'title' | 'description' | 'is_active' | 'logo_url'>>
   ): Promise<Project> => {
     const response = await apiClient.patch(`/projects/${id}`, data);
     return response.data;
