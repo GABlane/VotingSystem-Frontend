@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-primary antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Button styles - Framer style */
+  .btn-primary {
+    @apply bg-primary text-background px-6 py-3 rounded-button font-medium
+           hover:bg-opacity-90 transition-all duration-200 ease-out;
+  }
+
+  .btn-secondary {
+    @apply bg-surface text-primary px-6 py-3 rounded-button font-medium border border-border
+           hover:border-border-strong transition-all duration-200 ease-out;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-surface border border-border rounded-card p-6;
+  }
+
+  .card-elevated {
+    @apply bg-surface-elevated border border-border rounded-card p-6;
+  }
+
+  /* Input styles */
+  .input {
+    @apply bg-surface border border-border text-primary px-4 py-3 rounded-input
+           focus:outline-none focus:border-border-strong transition-colors duration-200;
+  }
+
+  /* Badge/Pill styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-button text-sm
+           border border-border bg-surface text-primary;
+  }
+
+  /* Section label */
+  .section-label {
+    @apply uppercase text-xs tracking-label font-medium text-secondary;
+  }
+
+  /* Navbar blur */
+  .nav-blur {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+@layer utilities {
+  /* Custom animations */
+  .fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
