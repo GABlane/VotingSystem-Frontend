@@ -53,4 +53,17 @@ export const projectsApi = {
     });
     return response.data;
   },
+
+  uploadLogo: async (projectId: string, file: File): Promise<{ logo_url: string }> => {
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    const response = await apiClient.post(`/projects/${projectId}/upload-logo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  },
 };
