@@ -131,7 +131,7 @@ export default function VotePage() {
           <p className="text-6xl mb-4">🔍</p>
           <h1 className="text-2xl font-bold mb-2">Project Not Found</h1>
           <p className="text-secondary mb-6">
-            This project doesn't exist or has been removed.
+            This project doesn&apos;t exist or has been removed.
           </p>
           <Link href="/" className="btn-primary inline-block">
             Go to Home
@@ -215,7 +215,7 @@ export default function VotePage() {
               className="w-full py-6 rounded-full bg-surface border border-border text-primary font-semibold text-lg flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
             >
               <span>✓</span>
-              <span>You've Already Voted</span>
+              <span>You&apos;ve Already Voted</span>
             </button>
           ) : justVoted ? (
             // Just voted success state
