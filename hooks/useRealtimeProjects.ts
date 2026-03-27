@@ -5,6 +5,11 @@ import { Project } from '@/lib/api/projects';
 export const useRealtimeProjects = (initialProjects: Project[]) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
 
+  // Update projects when initialProjects changes
+  useEffect(() => {
+    setProjects(initialProjects);
+  }, [initialProjects]);
+
   useEffect(() => {
     const channel = supabase
       .channel('admin-projects')

@@ -1,9 +1,20 @@
+import Image from 'next/image';
+
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-4xl mx-auto text-center">
+          <div className="flex justify-center mb-8 fade-in">
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              width={120}
+              height={120}
+              className="rounded-2xl"
+            />
+          </div>
           <h1 className="text-hero font-bold tracking-tighter mb-6 fade-in">
             Vote with a Simple Scan
           </h1>

@@ -4,6 +4,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'QR Voting System',
   description: 'Scan QR codes to vote for projects in real-time',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
