@@ -1,8 +1,16 @@
+'use client';
+
 import Image from 'next/image';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Theme Toggle - Floating in top right */}
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Hero Section */}
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-4xl mx-auto text-center">

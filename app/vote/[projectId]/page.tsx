@@ -8,6 +8,7 @@ import { votesApi } from '@/lib/api/votes';
 import { supabase } from '@/lib/supabase/client';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 export default function VotePage() {
   const params = useParams();
@@ -161,7 +162,12 @@ export default function VotePage() {
 
   // Main voting page
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      {/* Theme Toggle - Floating in top right */}
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
+
       <div className="max-w-2xl w-full">
         {/* Project Info */}
         <div className="text-center mb-8 fade-in">
