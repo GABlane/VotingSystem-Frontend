@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 export default function Navbar() {
   const router = useRouter();
@@ -45,9 +46,12 @@ export default function Navbar() {
             </div>
           </div>
 
-          <button onClick={handleLogout} className="btn-secondary text-sm">
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button onClick={handleLogout} className="btn-secondary text-sm">
+              Logout
+            </button>
+          </div>
         </div>
       </div>
     </nav>

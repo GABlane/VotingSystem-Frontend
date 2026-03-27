@@ -6,6 +6,32 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Light mode (default) */
+    --background: 255 255 255;
+    --surface: 249 250 251;
+    --surface-elevated: 243 244 246;
+    --border: 229 231 235;
+    --border-strong: 209 213 219;
+    --primary: 17 24 39;
+    --secondary: 107 114 128;
+    --muted: 156 163 175;
+    --accent: 37 99 235;
+  }
+
+  .dark {
+    /* Dark mode */
+    --background: 0 0 0;
+    --surface: 17 17 17;
+    --surface-elevated: 26 26 26;
+    --border: 34 34 34;
+    --border-strong: 51 51 51;
+    --primary: 255 255 255;
+    --secondary: 136 136 136;
+    --muted: 153 153 153;
+    --accent: 0 102 255;
+  }
+
   * {
     @apply border-border;
   }

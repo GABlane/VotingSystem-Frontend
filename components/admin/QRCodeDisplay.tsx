@@ -40,7 +40,7 @@ export default function QRCodeDisplay({ project }: QRCodeDisplayProps) {
 
       {project.qr_code_url ? (
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-lg inline-block">
+          <div className="bg-white dark:bg-white p-4 rounded-lg inline-block">
             <img src={project.qr_code_url} alt="QR Code" className="w-48 h-48" />
           </div>
 
