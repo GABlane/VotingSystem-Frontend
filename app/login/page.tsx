@@ -25,7 +25,9 @@ export default function UserLoginPage() {
       const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
       router.push(redirect);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+      const msg: string = err.response?.data?.message || 'Invalid credentials';
+      // Surface the "verify your email" message clearly
+      setError(msg);
       setIsLoading(false);
     }
   };

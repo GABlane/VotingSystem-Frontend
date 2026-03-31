@@ -30,9 +30,9 @@ export const useUserAuthStore = create<UserAuthState>((set) => ({
   },
 
   register: async (email, password) => {
-    const { user, access_token } = await usersApi.register(email, password);
-    localStorage.setItem('user_token', access_token);
-    set({ user, isAuthenticated: true, isLoading: false });
+    // Registration sends a verification email; no token returned until email is confirmed.
+    await usersApi.register(email, password);
+    set({ isLoading: false });
   },
 
   logout: () => {

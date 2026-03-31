@@ -1,20 +1,18 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useUserAuthStore } from '@/store/userAuth';
+import { usersApi } from '@/lib/api/users';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const { register } = useUserAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [done, setDone] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,14 +31,36 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(email, password);
-      const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
-      router.push(redirect);
+      await usersApi.register(email, password);
+      setDone(true);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Try again.');
       setIsLoading(false);
     }
   };
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6 bg-background relative">
+        <div className="absolute top-6 right-6 z-50">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-md">
+          <div className="card text-center py-10">
+            <p className="text-5xl mb-4">📬</p>
+            <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+            <p className="text-secondary mb-6">
+              We sent a verification link to <strong>{email}</strong>.
+              Click the link in the email to activate your account.
+            </p>
+            <Link href="/login" className="btn-primary inline-block">
+              Go to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 bg-background relative">

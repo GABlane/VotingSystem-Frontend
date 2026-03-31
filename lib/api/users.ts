@@ -16,7 +16,7 @@ export interface UserProfile {
 }
 
 export const usersApi = {
-  register: async (email: string, password: string): Promise<UserAuthResponse> => {
+  register: async (email: string, password: string): Promise<{ message: string }> => {
     const response = await apiClient.post('/users/register', { email, password });
     return response.data;
   },
