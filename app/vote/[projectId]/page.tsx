@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { projectsApi, Project } from '@/lib/api/projects';
 import { votesApi } from '@/lib/api/votes';
+import { feedbackApi } from '@/lib/api/feedback';
 import { supabase } from '@/lib/supabase/client';
 import { useUserAuthStore } from '@/store/userAuth';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -25,6 +26,11 @@ export default function VotePage() {
   const [voteCount, setVoteCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   // Restore auth state on mount
   useEffect(() => {
@@ -105,6 +111,26 @@ export default function VotePage() {
       }
     } finally {
       setIsLoadingVote(false);
+    }
+  };
+
+  const handleFeedback = async () => {
+    if (!feedbackComment.trim() || feedbackSubmitting) return;
+    setFeedbackSubmitting(true);
+    setFeedbackError(null);
+    try {
+      await feedbackApi.submit(projectId, feedbackComment.trim());
+      setFeedbackDone(true);
+      setFeedbackComment('');
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        setFeedbackError('You have already submitted feedback for this project.');
+        setFeedbackDone(true);
+      } else {
+        setFeedbackError('Failed to submit feedback. Please try again.');
+      }
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -267,7 +293,61 @@ export default function VotePage() {
           )}
         </div>
 
-        <div className="text-center mt-12">
+        {/* Feedback section */}
+        <div className="max-w-md mx-auto mt-10">
+          <div className="border-t border-border pt-8">
+            <h2 className="text-lg font-semibold mb-1">Leave Feedback</h2>
+            <p className="text-sm text-secondary mb-4">
+              Share your thoughts about this project.
+            </p>
+
+            {!isAuthenticated ? (
+              <p className="text-sm text-secondary">
+                <Link href={`/login?redirect=/vote/${projectId}`} className="underline text-primary">
+                  Sign in
+                </Link>{' '}
+                to leave feedback.
+              </p>
+            ) : feedbackDone ? (
+              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 text-sm text-center">
+                {feedbackError ?? 'Thanks for your feedback!'}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {feedbackError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                    {feedbackError}
+                  </div>
+                )}
+                <textarea
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  placeholder="Write your feedback here…"
+                  maxLength={1000}
+                  rows={3}
+                  disabled={feedbackSubmitting}
+                  className="input w-full resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-secondary">{feedbackComment.length}/1000</span>
+                  <button
+                    onClick={handleFeedback}
+                    disabled={feedbackSubmitting || !feedbackComment.trim()}
+                    className="btn-primary py-2 px-5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {feedbackSubmitting ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      'Submit Feedback'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="text-center mt-10">
           <Link href="/" className="text-sm text-secondary underline">
             ← All Projects
           </Link>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { projectsApi } from '@/lib/api/projects';
+import { feedbackApi, FeedbackEntry } from '@/lib/api/feedback';
 import { supabase } from '@/lib/supabase/client';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import QRCodeDisplay from '@/components/admin/QRCodeDisplay';
@@ -14,6 +15,7 @@ export default function ResultsPage() {
 
   const [results, setResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
 
   useEffect(() => {
     fetchResults();
@@ -50,8 +52,12 @@ export default function ResultsPage() {
 
   const fetchResults = async () => {
     try {
-      const data = await projectsApi.getResults(id);
+      const [data, feedbackData] = await Promise.all([
+        projectsApi.getResults(id),
+        feedbackApi.getForProject(id),
+      ]);
       setResults(data);
+      setFeedback(feedbackData);
       setIsLoading(false);
     } catch (err) {
       alert('Failed to load results');
@@ -125,6 +131,29 @@ export default function ResultsPage() {
                 <span className="text-xs text-secondary">
                   {new Date(vote.voted_at).toLocaleString()}
                 </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Feedback */}
+      <div className="card">
+        <h2 className="text-2xl font-bold mb-1">Feedback</h2>
+        <p className="text-secondary text-sm mb-4">{feedback.length} response{feedback.length !== 1 ? 's' : ''}</p>
+        {feedback.length === 0 ? (
+          <p className="text-secondary text-center py-8">No feedback yet</p>
+        ) : (
+          <div className="space-y-3 max-h-[480px] overflow-y-auto">
+            {feedback.map((entry) => (
+              <div key={entry.id} className="p-4 bg-surface-elevated rounded-xl space-y-1">
+                <p className="text-sm">{entry.comment}</p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-secondary">{entry.user_email}</span>
+                  <span className="text-xs text-secondary">
+                    {new Date(entry.created_at).toLocaleString()}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
