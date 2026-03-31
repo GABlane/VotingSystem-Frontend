@@ -1,16 +1,23 @@
 import apiClient from './axios';
 
+function getUserAuthHeader() {
+  const token = localStorage.getItem('user_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export const votesApi = {
-  cast: async (projectId: string, fingerprintData: string) => {
-    const response = await apiClient.post(`/votes/${projectId}`, {
-      fingerprintData,
-    });
+  cast: async (projectId: string) => {
+    const response = await apiClient.post(
+      `/votes/${projectId}`,
+      {},
+      { headers: getUserAuthHeader() },
+    );
     return response.data;
   },
 
-  checkIfVoted: async (projectId: string, fingerprintData: string): Promise<{ hasVoted: boolean }> => {
+  checkIfVoted: async (projectId: string): Promise<{ hasVoted: boolean }> => {
     const response = await apiClient.get(`/votes/${projectId}/check`, {
-      params: { fingerprint: fingerprintData },
+      headers: getUserAuthHeader(),
     });
     return response.data;
   },

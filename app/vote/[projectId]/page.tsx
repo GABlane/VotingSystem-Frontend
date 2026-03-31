@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { projectsApi, Project } from '@/lib/api/projects';
 import { votesApi } from '@/lib/api/votes';
 import { supabase } from '@/lib/supabase/client';
-import { useFingerprint } from '@/hooks/useFingerprint';
+import { useUserAuthStore } from '@/store/userAuth';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 
@@ -14,55 +14,54 @@ export default function VotePage() {
   const params = useParams();
   const projectId = params.projectId as string;
 
-  const { fingerprint, isLoading: isFingerprintLoading } = useFingerprint();
+  const { user, isAuthenticated, checkAuth, refreshVotesRemaining } = useUserAuthStore();
 
   const [project, setProject] = useState<Project | null>(null);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [hasVoted, setHasVoted] = useState(false);
+  const [isCheckingVote, setIsCheckingVote] = useState(false);
   const [isLoadingVote, setIsLoadingVote] = useState(false);
   const [justVoted, setJustVoted] = useState(false);
   const [voteCount, setVoteCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
+  // Restore auth state on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   // Fetch project details
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const data = await projectsApi.getOne(projectId);
+    projectsApi
+      .getOne(projectId)
+      .then((data) => {
         setProject(data);
         setVoteCount(data.total_votes);
-        setIsLoadingProject(false);
-      } catch (err: any) {
+      })
+      .catch((err: any) => {
         if (err.response?.status === 404) {
           setNotFound(true);
         } else {
           setError('Failed to load project. Please try again.');
         }
-        setIsLoadingProject(false);
-      }
-    };
-
-    fetchProject();
+      })
+      .finally(() => setIsLoadingProject(false));
   }, [projectId]);
 
-  // Check if already voted once fingerprint is available
+  // Check if already voted once authenticated
   useEffect(() => {
-    if (!fingerprint || !project) return;
+    if (!isAuthenticated || !project) return;
 
-    const checkVoted = async () => {
-      try {
-        const { hasVoted: voted } = await votesApi.checkIfVoted(projectId, fingerprint);
-        setHasVoted(voted);
-      } catch (err) {
-        console.error('Failed to check vote status:', err);
-      }
-    };
+    setIsCheckingVote(true);
+    votesApi
+      .checkIfVoted(projectId)
+      .then(({ hasVoted: voted }) => setHasVoted(voted))
+      .catch(() => {/* ignore */})
+      .finally(() => setIsCheckingVote(false));
+  }, [isAuthenticated, project, projectId]);
 
-    checkVoted();
-  }, [fingerprint, project, projectId]);
-
-  // Subscribe to real-time vote updates
+  // Real-time vote counter
   useEffect(() => {
     if (!project) return;
 
@@ -76,37 +75,31 @@ export default function VotePage() {
           table: 'votes',
           filter: `project_id=eq.${projectId}`,
         },
-        () => {
-          setVoteCount((prev) => prev + 1);
-        }
+        () => setVoteCount((prev) => prev + 1),
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [project, projectId]);
 
-  // Handle vote submission
   const handleVote = async () => {
-    if (!fingerprint || hasVoted || !project?.is_active) return;
+    if (!isAuthenticated || hasVoted || !project?.is_active) return;
+    if (user && user.votes_remaining <= 0) return;
 
     setIsLoadingVote(true);
     setError(null);
 
     try {
-      await votesApi.cast(projectId, fingerprint);
+      await votesApi.cast(projectId);
       setJustVoted(true);
       setHasVoted(true);
-
-      // Transition to "already voted" state after 2 seconds
-      setTimeout(() => {
-        setJustVoted(false);
-      }, 2000);
+      await refreshVotesRemaining();
+      setTimeout(() => setJustVoted(false), 2000);
     } catch (err: any) {
       if (err.response?.status === 409) {
-        // Already voted
         setHasVoted(true);
+      } else if (err.response?.status === 403) {
+        setError('You have no votes remaining.');
       } else {
         setError('Failed to cast vote. Please try again.');
       }
@@ -115,8 +108,7 @@ export default function VotePage() {
     }
   };
 
-  // Loading state
-  if (isLoadingProject || isFingerprintLoading) {
+  if (isLoadingProject) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -124,7 +116,6 @@ export default function VotePage() {
     );
   }
 
-  // Not found state
   if (notFound) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -142,7 +133,6 @@ export default function VotePage() {
     );
   }
 
-  // Error state
   if (error && !project) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -160,10 +150,10 @@ export default function VotePage() {
 
   if (!project) return null;
 
-  // Main voting page
+  const noVotesLeft = user?.votes_remaining === 0;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-      {/* Theme Toggle - Floating in top right */}
       <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
@@ -171,7 +161,6 @@ export default function VotePage() {
       <div className="max-w-2xl w-full">
         {/* Project Info */}
         <div className="text-center mb-8 fade-in">
-          {/* Logo */}
           {project.logo_url ? (
             <img
               src={project.logo_url}
@@ -183,11 +172,7 @@ export default function VotePage() {
               📊
             </div>
           )}
-
-          {/* Title */}
           <h1 className="text-4xl md:text-5xl font-bold mb-4">{project.title}</h1>
-
-          {/* Description */}
           {project.description && (
             <p className="text-lg text-secondary max-w-xl mx-auto">{project.description}</p>
           )}
@@ -199,7 +184,7 @@ export default function VotePage() {
           <p className="text-6xl font-bold">{voteCount}</p>
         </div>
 
-        {/* Vote Button / Status */}
+        {/* Vote area */}
         <div className="max-w-md mx-auto">
           {error && (
             <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm text-center">
@@ -208,14 +193,33 @@ export default function VotePage() {
           )}
 
           {!project.is_active ? (
-            // Inactive project
             <div className="card text-center py-8">
-              <p className="text-secondary">
-                This project is no longer accepting votes
-              </p>
+              <p className="text-secondary">This project is no longer accepting votes</p>
+            </div>
+          ) : !isAuthenticated ? (
+            // Not logged in
+            <div className="card text-center py-8 space-y-4">
+              <p className="text-secondary">Sign in to cast your vote</p>
+              <div className="flex gap-3 justify-center">
+                <Link
+                  href={`/login?redirect=/vote/${projectId}`}
+                  className="btn-primary"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href={`/register?redirect=/vote/${projectId}`}
+                  className="btn-secondary"
+                >
+                  Register
+                </Link>
+              </div>
+            </div>
+          ) : isCheckingVote ? (
+            <div className="flex justify-center py-4">
+              <LoadingSpinner size="md" />
             </div>
           ) : hasVoted && !justVoted ? (
-            // Already voted state
             <button
               disabled
               className="w-full py-6 rounded-full bg-surface border border-border text-primary font-semibold text-lg flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
@@ -224,7 +228,6 @@ export default function VotePage() {
               <span>You&apos;ve Already Voted</span>
             </button>
           ) : justVoted ? (
-            // Just voted success state
             <button
               disabled
               className="w-full py-6 rounded-full bg-green-500 text-white font-semibold text-lg flex items-center justify-center gap-2 animate-pulse"
@@ -232,11 +235,17 @@ export default function VotePage() {
               <span>✓</span>
               <span>Vote Recorded!</span>
             </button>
+          ) : noVotesLeft ? (
+            <button
+              disabled
+              className="w-full py-6 rounded-full bg-surface border border-border text-secondary font-semibold text-lg flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
+            >
+              No Votes Remaining
+            </button>
           ) : (
-            // Vote button (default state)
             <button
               onClick={handleVote}
-              disabled={isLoadingVote || !fingerprint}
+              disabled={isLoadingVote}
               className="btn-primary w-full py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform"
             >
               {isLoadingVote ? (
@@ -249,11 +258,19 @@ export default function VotePage() {
               )}
             </button>
           )}
+
+          {/* Votes remaining badge for logged-in users */}
+          {isAuthenticated && user && !hasVoted && !noVotesLeft && (
+            <p className="text-center text-sm text-secondary mt-4">
+              {user.votes_remaining} vote{user.votes_remaining !== 1 ? 's' : ''} remaining
+            </p>
+          )}
         </div>
 
-        {/* Powered by footer */}
         <div className="text-center mt-12">
-          <p className="text-secondary text-sm">Powered by QR Voting System</p>
+          <Link href="/" className="text-sm text-secondary underline">
+            ← All Projects
+          </Link>
         </div>
       </div>
     </div>

@@ -1,87 +1,179 @@
 'use client';
 
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { projectsApi, Project } from '@/lib/api/projects';
+import { useRealtimeProjects } from '@/hooks/useRealtimeProjects';
+import { useUserAuthStore } from '@/store/userAuth';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 
-export default function HomePage() {
+export default function PublicDashboard() {
+  const [initialProjects, setInitialProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedQr, setExpandedQr] = useState<string | null>(null);
+
+  const projects = useRealtimeProjects(initialProjects);
+  const { user, isAuthenticated, checkAuth } = useUserAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    projectsApi
+      .getAll()
+      .then((data) => setInitialProjects(data))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const activeProjects = projects.filter((p) => p.is_active);
+
   return (
-    <div className="min-h-screen flex flex-col relative">
-      {/* Theme Toggle - Floating in top right */}
-      <div className="absolute top-6 right-6 z-50">
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border sticky top-0 z-40 bg-background/80 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold">🗳 Voting</h1>
 
-      {/* Hero Section */}
-      <main className="flex-1 flex items-center justify-center px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex justify-center mb-8 fade-in">
-            <Image
-              src="/logo.png"
-              alt="Logo"
-              width={120}
-              height={120}
-              className="rounded-2xl"
-            />
-          </div>
-          <h1 className="text-hero font-bold tracking-tighter mb-6 fade-in">
-            Vote with a Simple Scan
-          </h1>
-          <p className="text-lg text-secondary mb-12 max-w-2xl mx-auto fade-in">
-            Modern QR code-based voting system. Scan, vote, and see results update in real-time.
-          </p>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
 
-          <div className="flex gap-4 justify-center fade-in">
-            <a href="/admin/login" className="btn-primary">
-              Admin Dashboard
-            </a>
-            <a href="#how-it-works" className="btn-secondary">
-              Learn More
-            </a>
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-secondary hidden sm:block">{user.email}</span>
+                <span className="text-sm font-medium bg-surface px-3 py-1 rounded-full border border-border">
+                  {user.votes_remaining} vote{user.votes_remaining !== 1 ? 's' : ''} left
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link href="/login" className="btn-secondary text-sm py-2 px-4">
+                  Sign In
+                </Link>
+                <Link href="/register" className="btn-primary text-sm py-2 px-4">
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
         </div>
+      </header>
+
+      {/* Main content */}
+      <main className="max-w-6xl mx-auto px-6 py-10">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">Active Projects</h2>
+          <p className="text-secondary">
+            Scan a QR code or click Vote to cast your vote.
+            {!isAuthenticated && (
+              <span>
+                {' '}
+                <Link href="/register" className="underline text-primary">
+                  Register
+                </Link>{' '}
+                to participate.
+              </span>
+            )}
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-24">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : activeProjects.length === 0 ? (
+          <div className="text-center py-24 text-secondary">
+            <p className="text-5xl mb-4">🗳</p>
+            <p className="text-xl font-medium">No active projects</p>
+            <p className="text-sm mt-2">Check back soon.</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activeProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                expandedQr={expandedQr}
+                onToggleQr={(id) => setExpandedQr(expandedQr === id ? null : id)}
+              />
+            ))}
+          </div>
+        )}
       </main>
 
-      {/* Features Section */}
-      <section id="how-it-works" className="py-24 px-6 border-t border-border">
-        <div className="max-w-5xl mx-auto">
-          <p className="section-label mb-8 text-center">HOW IT WORKS</p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="card slide-up">
-              <div className="text-4xl mb-4">📱</div>
-              <h3 className="text-xl font-semibold mb-2">Scan QR Code</h3>
-              <p className="text-secondary text-sm">
-                Each project has a unique QR code. Simply scan it with your phone camera.
-              </p>
-            </div>
-
-            <div className="card slide-up" style={{ animationDelay: '100ms' }}>
-              <div className="text-4xl mb-4">✅</div>
-              <h3 className="text-xl font-semibold mb-2">Cast Your Vote</h3>
-              <p className="text-secondary text-sm">
-                One tap to vote. Duplicate votes are automatically prevented.
-              </p>
-            </div>
-
-            <div className="card slide-up" style={{ animationDelay: '200ms' }}>
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-xl font-semibold mb-2">Live Results</h3>
-              <p className="text-secondary text-sm">
-                Watch votes update in real-time. Transparent and instant results.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-sm text-secondary">
-            Built with Next.js, NestJS, and Supabase
-          </p>
-        </div>
+      <footer className="border-t border-border py-8 px-6 text-center text-sm text-secondary">
+        <Link href="/admin/login" className="underline">
+          Admin
+        </Link>
       </footer>
+    </div>
+  );
+}
+
+interface ProjectCardProps {
+  project: Project;
+  expandedQr: string | null;
+  onToggleQr: (id: string) => void;
+}
+
+function ProjectCard({ project, expandedQr, onToggleQr }: ProjectCardProps) {
+  const isQrOpen = expandedQr === project.id;
+
+  return (
+    <div className="card flex flex-col gap-4">
+      {/* Logo + title */}
+      <div className="flex items-center gap-3">
+        {project.logo_url ? (
+          <img
+            src={project.logo_url}
+            alt={project.title}
+            className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-xl bg-surface-elevated flex items-center justify-center text-2xl flex-shrink-0">
+            📊
+          </div>
+        )}
+        <div className="min-w-0">
+          <h3 className="font-semibold truncate">{project.title}</h3>
+          <p className="text-sm text-secondary">{project.total_votes} vote{project.total_votes !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Description */}
+      {project.description && (
+        <p className="text-sm text-secondary line-clamp-2">{project.description}</p>
+      )}
+
+      {/* QR toggle */}
+      {project.qr_code_url && (
+        <div>
+          <button
+            onClick={() => onToggleQr(project.id)}
+            className="text-sm underline text-secondary hover:text-primary transition-colors"
+          >
+            {isQrOpen ? 'Hide QR code' : 'Show QR code'}
+          </button>
+          {isQrOpen && (
+            <div className="mt-3 flex justify-center">
+              <img
+                src={project.qr_code_url}
+                alt={`QR code for ${project.title}`}
+                className="w-40 h-40 rounded-xl"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Vote button */}
+      <Link
+        href={`/vote/${project.id}`}
+        className="btn-primary text-center text-sm mt-auto"
+      >
+        Vote
+      </Link>
     </div>
   );
 }
